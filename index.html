@@ -6,15 +6,15 @@
 <title>TF93 Furnace Hive</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Layout: in-game orientation (Y up, Furnace bottom-right), toolbar over a zoomable board, then move orders. Single dark look by choice. */
+/* Layout: in-game orientation (Y up), toolbar + large zoomable planning board + side editor, then roster. Single dark look by choice. */
 :root{
  --bg:#0f1524; --panel:#141c2f; --line:#26324f; --fg:#eef1f8; --mute:#93a0bd;
- --gold:#f4b73b; --mg:#e67ad8; --open:#3fd39b; --red:#ff6b6b;
+ --gold:#f4b73b; --mg:#e67ad8; --ok:#3fd39b; --red:#ff6b6b;
  --display:"Chakra Petch",ui-sans-serif,system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
  color-scheme:dark;
 }
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;margin:0}
-.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:grid;gap:16px}
+.wrap{max-width:1440px;margin:0 auto;padding-inline:16px;padding-block:20px 40px;display:grid;gap:14px}
 h1{font-family:var(--display);font-size:clamp(26px,6vw,42px);margin:0;text-wrap:balance}
 .sub{margin:2px 0 0;color:var(--mute)}
 .legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;font-weight:600}
@@ -23,40 +23,48 @@ h1{font-family:var(--display);font-size:clamp(26px,6vw,42px);margin:0;text-wrap:
 .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px}
 .btn{font:600 14px var(--body);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:38px}
 .btn:hover{border-color:var(--mute)}
-.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .btn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
 .btn.sq{width:40px;padding:0;font-size:20px}
+.btn.pri{background:var(--gold);color:#1a1405;border-color:var(--gold)}
 .zl{font-family:var(--mono);font-size:13px;color:var(--mute);min-width:48px;text-align:center}
 .sp{flex:1 1 0}
 .msg{font-size:13px;color:var(--mute);min-height:1.5em}
-.board{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:auto;max-height:78vh;touch-action:pan-x pan-y}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media (max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}}
+.board{border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:auto;height:min(80vh,900px);touch-action:pan-x pan-y}
 .board svg{display:block}
-.board.edit .base{cursor:grab;touch-action:none}
+.board.edit .base,.board.edit .mgp{cursor:grab;touch-action:none}
+.board.placing{cursor:crosshair}
 .base{cursor:pointer}
-.base.drag{cursor:grabbing}
-.find{display:flex;gap:10px}
-.find input{font:inherit;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;flex:1 1 auto;min-width:0}
-.find input:focus-visible{outline:2px solid var(--gold)}
-.card{border:1px solid var(--gold);border-radius:8px;padding:12px 14px;background:var(--panel);font-family:var(--mono);font-size:14px}
-.card .n{font-family:var(--display);font-size:20px;font-weight:700}
-h2{font-family:var(--display);font-size:20px;margin:0}
-.notes{display:grid;gap:8px;max-width:78ch}
-.notes div{display:flex;gap:10px;align-items:baseline}
-.notes b.dot{width:10px;height:10px;border-radius:50%;flex:none;transform:translateY(1px)}
+.side{display:grid;gap:12px;position:sticky;top:64px}
+.pane{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px 14px;display:grid;gap:10px}
+.pane h2{font-family:var(--display);font-size:17px;margin:0}
+.pane .n{font-family:var(--display);font-size:20px;font-weight:700;word-break:break-word}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row label{font-size:12px;color:var(--mute);display:grid;gap:3px}
+input[type=number],input[type=search],select{font:500 14px var(--mono);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:7px 8px;min-width:0}
+input[type=number]{width:84px}
+.find input{width:100%;box-sizing:border-box;font-family:var(--body)}
+.hint{font-size:13px;color:var(--mute)}
+.tray{display:grid;gap:6px;max-height:220px;overflow:auto}
+.tray button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:14px}
+.tray button:hover,.tray button:focus-visible{border-color:var(--gold)}
+.tray small{font-family:var(--mono);color:var(--mute)}
+h2.sec{font-family:var(--display);font-size:20px;margin:0}
 .sum{display:flex;flex-wrap:wrap;gap:16px;font-family:var(--mono);font-size:13px;color:var(--mute)}
 .sum b{color:var(--fg)}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
-table{border-collapse:collapse;width:100%;font-size:14px;min-width:600px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
 th{font-family:var(--display);color:var(--mute);font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:12px;background:var(--panel)}
 td.c{font-family:var(--mono);font-variant-numeric:tabular-nums}
 tbody tr{cursor:pointer}
 tbody tr:hover td{background:#1a2440}
 .rk{font-family:var(--mono);font-size:12px;padding:1px 7px;border-radius:3px;color:#fff}
-.st{font-size:12px;font-family:var(--mono);padding:1px 6px;border-radius:3px;border:1px solid var(--line);color:var(--mute)}
-.st.stay{color:var(--open);border-color:var(--open)}
-.st.move{color:var(--gold);border-color:var(--gold)}
-.st.far{color:var(--red);border-color:var(--red)}
+.st{font-size:12px;font-family:var(--mono);color:var(--mute)}
+.st.mv{color:var(--gold)}
+.st.off{color:var(--red)}
 .foot{border-top:1px solid var(--line);padding-top:14px;color:var(--mute);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:space-between}
 .foot b{color:var(--gold);font-family:var(--display);font-weight:700;letter-spacing:.02em}
 </style>
@@ -65,46 +73,54 @@ tbody tr:hover td{background:#1a2440}
 <div class="wrap">
 <header>
  <h1>TF93 · ALLIANCE HIVE FORMATION</h1>
- <p class="sub">Furnace (562, 4) · current-location lineup · in-game orientation (Y goes up) · MG plot and open slots</p>
+ <p class="sub" id="sub">Furnace (562, 4) · live positions from the map scan · in-game orientation (Y goes up)</p>
 </header>
 <div class="legend" id="legend"></div>
 <div class="bar">
  <button class="btn sq" id="zout" aria-label="Zoom out">−</button>
  <span class="zl" id="zl">100%</span>
  <button class="btn sq" id="zin" aria-label="Zoom in">+</button>
- <button class="btn" id="zfit">Fit</button>
- <button class="btn" id="edit" aria-pressed="false">Drag &amp; drop: off</button>
+ <button class="btn" id="zfit">Fit hive</button>
+ <button class="btn" id="zall">Whole map</button>
+ <button class="btn" id="edit" aria-pressed="false">Edit layout: off</button>
  <button class="btn" id="undo">Undo</button>
- <button class="btn" id="reset">Reset layout</button>
+ <button class="btn" id="reset">Reset to scan</button>
+ <button class="btn" id="mgt" aria-pressed="true">MG plot: shown</button>
  <span class="sp"></span>
  <button class="btn" id="png">Download PNG</button>
 </div>
-<div class="msg" id="msg" role="status">Tip: Ctrl + scroll or pinch to zoom. Turn on drag &amp; drop to move bases; dropping on another base swaps them.</div>
-<div class="board" id="board"><svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TF93 hive map"></svg></div>
-<div class="find"><input id="q" type="search" placeholder="Find a member, e.g. MamaRudra" aria-label="Find a member" list="names"><datalist id="names"></datalist></div>
-<div id="card" class="card" hidden></div>
-<div class="notes" id="notes"></div>
+<div class="msg" id="msg" role="status">Turn on Edit layout to drag bases, or tap a base and type a new X / Y. Ctrl + scroll or pinch to zoom.</div>
+<div class="stage">
+ <div class="board" id="board"><svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TF93 hive map"></svg></div>
+ <aside class="side">
+  <div class="pane find"><input id="q" type="search" placeholder="Find a member" aria-label="Find a member" list="names"><datalist id="names"></datalist></div>
+  <div class="pane" id="ed"><h2>Selected base</h2><div class="hint">Tap a base on the map or in the roster.</div></div>
+  <div class="pane"><h2>Not on the map</h2><div class="hint">Far away in the scan. Tap one, then tap a spot on the map to place it.</div><div class="tray" id="tray"></div></div>
+ </aside>
+</div>
 <div style="display:grid;gap:10px">
- <h2>Move orders</h2>
+ <h2 class="sec">Roster &amp; move orders</h2>
  <div class="sum" id="sum"></div>
- <div class="tbl"><table><thead><tr><th>Member</th><th>Rank</th><th>Now</th><th>New spot</th><th>Order</th></tr></thead><tbody id="tb"></tbody></table></div>
+ <div class="tbl"><table><thead><tr><th>Member</th><th>Rank</th><th>Scan spot</th><th>Plan spot</th><th>Order</th></tr></thead><tbody id="tb"></tbody></table></div>
 </div>
 <footer class="foot"><span>Hive map by <b>MamaRudra</b></span><span>TF93 · Server 2093</span></footer>
 </div>
 <script>
-const D={"members": [{"n": "Sheriffrakushka", "x": 479, "y": 448, "r": "R1", "sh": true, "far": true}, {"n": "JhonWick 89", "x": 472, "y": 445, "r": "R3", "sh": false, "far": true}, {"n": "TetsuyaTx", "x": 482, "y": 448, "r": "R3", "sh": false, "far": true}, {"n": "DARK KNIGHT 18", "x": 497, "y": 448, "r": "UN", "sh": false, "far": true}, {"n": "Kᴇɴɴ", "x": 509, "y": 448, "r": "R4", "sh": false, "far": true}, {"n": "ઇଓlueTequila", "x": 509, "y": 444, "r": "R3", "sh": true, "far": true}, {"n": "R E VÂNO", "x": 505, "y": 444, "r": "UN", "sh": false, "far": true}, {"n": "LiONHEART", "x": 513, "y": 448, "r": "R3", "sh": false, "far": true}, {"n": "Teana HT", "x": 535, "y": 466, "r": "R3", "sh": false, "far": true}, {"n": "DadDaddy", "x": 448, "y": 490, "r": "UN", "sh": false, "far": true}, {"n": "ᴱˡᶠ", "x": 490, "y": 551, "r": "R3", "sh": false, "far": true}, {"n": "Ir Jazza", "x": 373, "y": 898, "r": "UN", "sh": false, "far": true}, {"n": "tokyo9820", "x": 542, "y": 814, "r": "R3", "sh": false, "far": true}, {"n": "Augustinnnn", "x": 537, "y": 9, "r": "R2", "sh": true, "far": false}, {"n": "John Snow 겨울", "x": 534, "y": 2, "r": "R4", "sh": false, "far": false}, {"n": "VELV3T", "x": 534, "y": 8, "r": "R3", "sh": false, "far": false}, {"n": "DARIKKOSHA", "x": 537, "y": 2, "r": "R1", "sh": true, "far": false}, {"n": "KAPOL", "x": 537, "y": 6, "r": "R3", "sh": false, "far": false}, {"n": "ANISAWA", "x": 534, "y": 5, "r": "R2", "sh": true, "far": false}, {"n": "luckyseno", "x": 529, "y": 11, "r": "R2", "sh": false, "far": false}, {"n": "fara shmara", "x": 537, "y": 17, "r": "R2", "sh": false, "far": false}, {"n": "Baby Miu", "x": 533, "y": 14, "r": "R3", "sh": false, "far": false}, {"n": "M A N N O", "x": 537, "y": 14, "r": "R2", "sh": false, "far": false}, {"n": "TADAKA", "x": 534, "y": 11, "r": "R3", "sh": true, "far": false}, {"n": "ＲＥＨＡＡＮ", "x": 534, "y": 17, "r": "R4", "sh": false, "far": false}, {"n": "BinCommander 3d11", "x": 546, "y": 8, "r": "R4", "sh": false, "far": false}, {"n": "Harsh ind", "x": 540, "y": 1, "r": "UN", "sh": false, "far": false}, {"n": "WarMongerVish", "x": 549, "y": 8, "r": "R3", "sh": false, "far": false}, {"n": "Gà Gô 11", "x": 541, "y": 9, "r": "R3", "sh": false, "far": false}, {"n": "cherryBombshell", "x": 543, "y": 1, "r": "UN", "sh": false, "far": false}, {"n": "Nhn1189", "x": 546, "y": 1, "r": "R2", "sh": false, "far": false}, {"n": "dhenba", "x": 546, "y": 5, "r": "R1", "sh": true, "far": false}, {"n": "TфNE REBфRN", "x": 540, "y": 6, "r": "R3", "sh": false, "far": false}, {"n": "AyaRi", "x": 549, "y": 5, "r": "R3", "sh": false, "far": false}, {"n": "HARSH1212", "x": 543, "y": 6, "r": "R3", "sh": false, "far": false}, {"n": "fateofmaurielles", "x": 549, "y": 2, "r": "R2", "sh": true, "far": false}, {"n": "Mega Putri", "x": 552, "y": 1, "r": "R2", "sh": false, "far": false}, {"n": "Ashely88", "x": 552, "y": 5, "r": "R4", "sh": false, "far": false}, {"n": "I am Shinchan", "x": 555, "y": 5, "r": "R3", "sh": false, "far": false}, {"n": "k e y r a", "x": 555, "y": 1, "r": "R3", "sh": false, "far": false}, {"n": "BonnieTran", "x": 558, "y": 1, "r": "R3", "sh": false, "far": false}, {"n": "chabrueh", "x": 558, "y": 5, "r": "R2", "sh": false, "far": false}, {"n": "naka nè", "x": 552, "y": 8, "r": "R3", "sh": false, "far": false}, {"n": "BUBBLES MAY", "x": 555, "y": 8, "r": "UN", "sh": false, "far": false}, {"n": "Clone Nupa", "x": 558, "y": 8, "r": "R1", "sh": false, "far": false}, {"n": "XoDarkLightoX", "x": 540, "y": 17, "r": "R1", "sh": true, "far": false}, {"n": "DOCTOR KIT", "x": 549, "y": 12, "r": "UN", "sh": false, "far": false}, {"n": "mơ iu bá khí", "x": 540, "y": 14, "r": "R3", "sh": false, "far": false}, {"n": "BANG J0SER", "x": 543, "y": 14, "r": "UN", "sh": true, "far": false}, {"n": "AXON 222", "x": 545, "y": 18, "r": "R2", "sh": false, "far": false}, {"n": "hestyyyy", "x": 549, "y": 18, "r": "R3", "sh": false, "far": false}, {"n": "QQhere", "x": 546, "y": 11, "r": "R3", "sh": false, "far": false}, {"n": "Raguplays", "x": 546, "y": 15, "r": "R3", "sh": false, "far": false}, {"n": "BUTTERCUP ZING", "x": 549, "y": 15, "r": "UN", "sh": false, "far": false}, {"n": "BLOSSOM JUNE", "x": 553, "y": 15, "r": "UN", "sh": false, "far": false}, {"n": "hwanglin", "x": 553, "y": 12, "r": "R3", "sh": false, "far": false}, {"n": "FishCanFly", "x": 553, "y": 18, "r": "R3", "sh": false, "far": false}, {"n": "RDKAS", "x": 558, "y": 12, "r": "UN", "sh": false, "far": false}, {"n": "NuPakachi", "x": 562, "y": 9, "r": "R4", "sh": false, "far": false}, {"n": "Teana HảiTrà", "x": 571, "y": 4, "r": "R3", "sh": false, "far": false}, {"n": "rielz riels", "x": 561, "y": 12, "r": "UN", "sh": false, "far": false}, {"n": "Someth1nG", "x": 537, "y": 25, "r": "R3", "sh": false, "far": false}, {"n": "Baron 077", "x": 537, "y": 21, "r": "R3", "sh": false, "far": false}, {"n": "MiLuna11", "x": 530, "y": 21, "r": "UN", "sh": false, "far": false}, {"n": "D1 O  N  E", "x": 534, "y": 25, "r": "R5", "sh": false, "far": false}, {"n": "MamaRudra", "x": 534, "y": 21, "r": "R4", "sh": false, "far": false}, {"n": "Tabibii", "x": 529, "y": 32, "r": "UN", "sh": true, "far": false}, {"n": "Ɗoãn Đại Hiệp", "x": 537, "y": 30, "r": "R3", "sh": false, "far": false}, {"n": "Pegasussssssssss", "x": 542, "y": 21, "r": "R2", "sh": false, "far": false}, {"n": "BharatDesh", "x": 545, "y": 29, "r": "R2", "sh": true, "far": false}, {"n": "Marlboromild", "x": 545, "y": 25, "r": "R2", "sh": false, "far": false}, {"n": "Yaammm", "x": 545, "y": 21, "r": "R3", "sh": false, "far": false}, {"n": "Nathasya Pink", "x": 549, "y": 25, "r": "R2", "sh": false, "far": false}, {"n": "侍の国", "x": 549, "y": 29, "r": "UN", "sh": false, "far": false}, {"n": "ρнσєиιאָ", "x": 549, "y": 21, "r": "UN", "sh": false, "far": false}, {"n": "Kampp", "x": 541, "y": 27, "r": "R3", "sh": false, "far": false}, {"n": "Zenitya", "x": 553, "y": 21, "r": "UN", "sh": false, "far": false}, {"n": "Pink Nathasya", "x": 553, "y": 25, "r": "R2", "sh": false, "far": false}, {"n": "艾連葉卡EY", "x": 541, "y": 33, "r": "R3", "sh": false, "far": false}, {"n": "Hamishhhhh", "x": 541, "y": 30, "r": "R4", "sh": false, "far": false}, {"n": "Ngoc174", "x": 553, "y": 33, "r": "UN", "sh": false, "far": false}, {"n": "Rᴀʜᴜʟ", "x": 549, "y": 41, "r": "R3", "sh": false, "far": false}, {"n": "zxThor", "x": 557, "y": 41, "r": "R2", "sh": true, "far": false}, {"n": "Motsdoux", "x": 578, "y": 50, "r": "R3", "sh": false, "far": false}], "furnace": [562, 4], "A": {"Sheriffrakushka": [561, 23], "JhonWick 89": [558, 14], "TetsuyaTx": [561, 17], "DARK KNIGHT 18": [543, 8], "Kᴇɴɴ": [555, 23], "ઇଓlueTequila": [561, 20], "R E VÂNO": [555, 11], "LiONHEART": [555, 14], "Teana HT": [558, 17], "DadDaddy": [555, 17], "ᴱˡᶠ": [555, 20], "Ir Jazza": [558, 20], "tokyo9820": [558, 23], "Augustinnnn": [537, 8], "John Snow 겨울": [534, 2], "VELV3T": [534, 8], "DARIKKOSHA": [537, 2], "KAPOL": [537, 5], "ANISAWA": [534, 5], "luckyseno": [534, 11], "fara shmara": [540, 14], "Baby Miu": [534, 14], "M A N N O": [540, 11], "TADAKA": [537, 11], "ＲＥＨＡＡＮ": [537, 14], "BinCommander 3d11": [546, 8], "Harsh ind": [540, 2], "WarMongerVish": [549, 8], "Gà Gô 11": [540, 8], "cherryBombshell": [543, 2], "Nhn1189": [546, 2], "dhenba": [546, 5], "TфNE REBфRN": [540, 5], "AyaRi": [549, 5], "HARSH1212": [543, 5], "fateofmaurielles": [549, 2], "Mega Putri": [552, 2], "Ashely88": [552, 5], "I am Shinchan": [555, 5], "k e y r a": [555, 2], "BonnieTran": [558, 2], "chabrueh": [558, 5], "naka nè": [552, 8], "BUBBLES MAY": [555, 8], "Clone Nupa": [558, 8], "XoDarkLightoX": [543, 17], "DOCTOR KIT": [549, 11], "mơ iu bá khí": [543, 11], "BANG J0SER": [543, 14], "AXON 222": [546, 17], "hestyyyy": [549, 17], "QQhere": [546, 11], "Raguplays": [546, 14], "BUTTERCUP ZING": [549, 14], "BLOSSOM JUNE": [552, 14], "hwanglin": [552, 11], "FishCanFly": [552, 17], "RDKAS": [558, 11], "NuPakachi": [561, 11], "Teana HảiTrà": [561, 8], "rielz riels": [561, 14], "Someth1nG": [540, 20], "Baron 077": [540, 17], "MiLuna11": [534, 17], "D1 O  N  E": [537, 20], "MamaRudra": [537, 17], "Tabibii": [540, 23], "Ɗoãn Đại Hiệp": [543, 26], "Pegasussssssssss": [543, 20], "BharatDesh": [549, 26], "Marlboromild": [546, 23], "Yaammm": [546, 20], "Nathasya Pink": [549, 23], "侍の国": [552, 26], "ρнσєиιאָ": [549, 20], "Kampp": [543, 23], "Zenitya": [552, 20], "Pink Nathasya": [552, 23], "艾連葉卡EY": [546, 29], "Hamishhhhh": [546, 26], "Ngoc174": [555, 26], "Rᴀʜᴜʟ": [549, 29], "zxThor": [558, 26], "Motsdoux": [561, 26]}, "B": {"D1 O  N  E": [558, 5], "Kᴇɴɴ": [561, 11], "John Snow 겨울": [555, 2], "ＲＥＨＡＡＮ": [555, 5], "BinCommander 3d11": [558, 8], "Ashely88": [558, 2], "NuPakachi": [561, 8], "MamaRudra": [555, 8], "Hamishhhhh": [558, 11], "JhonWick 89": [555, 11], "TetsuyaTx": [558, 17], "ઇଓlueTequila": [561, 17], "LiONHEART": [561, 20], "Teana HT": [558, 14], "ᴱˡᶠ": [558, 20], "tokyo9820": [555, 14], "VELV3T": [543, 5], "KAPOL": [543, 2], "Baby Miu": [543, 11], "TADAKA": [543, 8], "WarMongerVish": [549, 8], "Gà Gô 11": [546, 8], "TфNE REBфRN": [546, 5], "AyaRi": [549, 5], "HARSH1212": [546, 2], "I am Shinchan": [552, 5], "k e y r a": [549, 2], "BonnieTran": [552, 2], "naka nè": [552, 8], "mơ iu bá khí": [546, 11], "hestyyyy": [552, 14], "QQhere": [549, 11], "Raguplays": [549, 14], "hwanglin": [552, 11], "FishCanFly": [555, 17], "Teana HảiTrà": [561, 14], "Someth1nG": [549, 17], "Baron 077": [546, 14], "Ɗoãn Đại Hiệp": [552, 20], "Yaammm": [552, 17], "Kampp": [555, 20], "艾連葉卡EY": [555, 23], "Rᴀʜᴜʟ": [558, 23], "Motsdoux": [561, 23], "Augustinnnn": [540, 11], "ANISAWA": [540, 8], "luckyseno": [540, 14], "fara shmara": [543, 17], "M A N N O": [543, 14], "Nhn1189": [540, 2], "fateofmaurielles": [540, 5], "Mega Putri": [546, 17], "chabrueh": [549, 20], "AXON 222": [546, 20], "Pegasussssssssss": [549, 23], "BharatDesh": [552, 26], "Marlboromild": [552, 23], "Nathasya Pink": [555, 26], "Pink Nathasya": [558, 26], "zxThor": [561, 26], "Sheriffrakushka": [537, 8], "DARIKKOSHA": [537, 2], "dhenba": [537, 5], "Clone Nupa": [546, 23], "XoDarkLightoX": [543, 20], "DARK KNIGHT 18": [534, 14], "R E VÂNO": [537, 20], "DadDaddy": [534, 11], "Ir Jazza": [534, 8], "Harsh ind": [534, 2], "cherryBombshell": [534, 5], "BUBBLES MAY": [537, 11], "DOCTOR KIT": [537, 14], "BANG J0SER": [537, 17], "BUTTERCUP ZING": [540, 20], "BLOSSOM JUNE": [543, 23], "RDKAS": [540, 17], "rielz riels": [549, 26], "MiLuna11": [534, 17], "Tabibii": [540, 23], "侍の国": [546, 29], "ρнσєиιאָ": [543, 26], "Zenitya": [546, 26], "Ngoc174": [549, 29]}, "C": {"D1 O  N  E": [558, 5], "Kᴇɴɴ": [561, 11], "John Snow 겨울": [555, 2], "ＲＥＨＡＡＮ": [555, 5], "BinCommander 3d11": [558, 8], "Ashely88": [558, 2], "NuPakachi": [561, 8], "MamaRudra": [555, 8], "Hamishhhhh": [558, 11], "JhonWick 89": [555, 11], "TetsuyaTx": [558, 17], "ઇଓlueTequila": [561, 17], "LiONHEART": [561, 20], "Teana HT": [558, 14], "ᴱˡᶠ": [558, 20], "tokyo9820": [555, 14], "VELV3T": [543, 5], "KAPOL": [543, 2], "Baby Miu": [543, 11], "TADAKA": [543, 8], "WarMongerVish": [549, 8], "Gà Gô 11": [546, 8], "TфNE REBфRN": [546, 5], "AyaRi": [549, 5], "HARSH1212": [546, 2], "I am Shinchan": [552, 5], "k e y r a": [549, 2], "BonnieTran": [552, 2], "naka nè": [552, 8], "mơ iu bá khí": [546, 11], "hestyyyy": [552, 14], "QQhere": [549, 11], "Raguplays": [549, 14], "hwanglin": [552, 11], "FishCanFly": [555, 17], "Teana HảiTrà": [561, 14], "Someth1nG": [549, 17], "Baron 077": [546, 14], "Ɗoãn Đại Hiệp": [552, 20], "Yaammm": [552, 17], "Kampp": [555, 20], "艾連葉卡EY": [555, 23], "Rᴀʜᴜʟ": [558, 23], "Motsdoux": [561, 23], "Augustinnnn": [540, 11], "ANISAWA": [540, 8], "luckyseno": [540, 14], "fara shmara": [543, 17], "M A N N O": [543, 14], "Nhn1189": [540, 2], "fateofmaurielles": [540, 5], "Mega Putri": [546, 17], "chabrueh": [549, 20], "AXON 222": [546, 20], "Pegasussssssssss": [549, 23], "BharatDesh": [552, 26], "Marlboromild": [552, 23], "Nathasya Pink": [555, 26], "Pink Nathasya": [558, 26], "zxThor": [561, 26], "Sheriffrakushka": [516, 8], "DARK KNIGHT 18": [516, 2], "R E VÂNO": [516, 5], "DadDaddy": [516, 11], "Ir Jazza": [516, 14], "DARIKKOSHA": [519, 5], "Harsh ind": [519, 2], "cherryBombshell": [522, 2], "dhenba": [522, 5], "BUBBLES MAY": [525, 2], "Clone Nupa": [525, 5], "XoDarkLightoX": [519, 14], "DOCTOR KIT": [522, 8], "BANG J0SER": [519, 8], "BUTTERCUP ZING": [519, 11], "BLOSSOM JUNE": [522, 11], "RDKAS": [525, 11], "rielz riels": [525, 8], "MiLuna11": [519, 17], "Tabibii": [516, 17], "侍の国": [522, 17], "ρнσєиιאָ": [522, 14], "Zenitya": [525, 14], "Ngoc174": [525, 17]}, "hive": [[531, 2], [534, 2], [537, 2], [540, 2], [543, 2], [546, 2], [549, 2], [552, 2], [555, 2], [558, 2], [531, 5], [534, 5], [537, 5], [540, 5], [543, 5], [546, 5], [549, 5], [552, 5], [555, 5], [558, 5], [531, 8], [534, 8], [537, 8], [540, 8], [543, 8], [546, 8], [549, 8], [552, 8], [555, 8], [558, 8], [531, 11], [534, 11], [537, 11], [540, 11], [543, 11], [546, 11], [549, 11], [552, 11], [555, 11], [558, 11], [534, 14], [537, 14], [540, 14], [543, 14], [546, 14], [549, 14], [552, 14], [555, 14], [558, 14], [534, 17], [537, 17], [540, 17], [543, 17], [546, 17], [549, 17], [552, 17], [555, 17], [558, 17], [531, 20], [534, 20], [537, 20], [540, 20], [543, 20], [546, 20], [549, 20], [552, 20], [555, 20], [558, 20], [531, 23], [534, 23], [537, 23], [540, 23], [543, 23], [546, 23], [549, 23], [552, 23], [555, 23], [558, 23], [531, 26], [534, 26], [537, 26], [540, 26], [543, 26], [546, 26], [549, 26], [552, 26], [555, 26], [558, 26], [561, 8], [561, 11], [561, 14], [561, 17], [561, 20], [561, 23], [561, 26], [531, 29], [534, 29], [537, 29], [540, 29], [543, 29], [546, 29], [549, 29]], "outside": [[504, 2], [507, 2], [510, 2], [513, 2], [516, 2], [519, 2], [522, 2], [525, 2], [504, 5], [507, 5], [510, 5], [513, 5], [516, 5], [519, 5], [522, 5], [525, 5], [504, 8], [507, 8], [510, 8], [513, 8], [516, 8], [519, 8], [522, 8], [525, 8], [504, 11], [507, 11], [510, 11], [513, 11], [516, 11], [519, 11], [522, 11], [525, 11], [504, 14], [507, 14], [510, 14], [513, 14], [516, 14], [519, 14], [522, 14], [525, 14], [504, 17], [507, 17], [510, 17], [513, 17], [516, 17], [519, 17], [522, 17], [525, 17]], "neighbours": [{"n": "Clone Fara", "a": "", "x": 529, "y": 15}, {"n": "明啊仔", "a": "TWWH", "x": 569, "y": 9}, {"n": "豬腳蹄", "a": "TWWH", "x": 565, "y": 9}, {"n": "clone D kelon", "a": "TWWH", "x": 575, "y": 6}, {"n": "GlenRaiZen", "a": "TWWH", "x": 571, "y": 1}, {"n": "xcupux", "a": "TWWH", "x": 572, "y": 7}, {"n": "喵你三拳", "a": "TWWH", "x": 574, "y": 1}, {"n": "KING BALDWIN lV", "a": "TWWH", "x": 578, "y": 9}, {"n": "jing11", "a": "TWWH", "x": 578, "y": 5}, {"n": "N0WHERE MAN", "a": "TWWH", "x": 578, "y": 1}, {"n": "bubelluo", "a": "TWWH", "x": 565, "y": 12}, {"n": "ももちよぉᰔ", "a": "TWWH", "x": 568, "y": 12}, {"n": "sashva", "a": "TWWH", "x": 575, "y": 16}, {"n": "VoVrrr", "a": "TWWH", "x": 578, "y": 12}, {"n": "牛寶包包", "a": "TWWH", "x": 578, "y": 18}, {"n": "tomato8888", "a": "TWWH", "x": 572, "y": 19}, {"n": "輕", "a": "TWWH", "x": 575, "y": 11}, {"n": "天使乂", "a": "TWWH", "x": 575, "y": 19}, {"n": "紋火", "a": "TWWH", "x": 578, "y": 15}, {"n": "RR38Nusantara", "a": "TWWH", "x": 572, "y": 12}, {"n": "Leona Gs", "a": "TWWH", "x": 572, "y": 16}, {"n": "豬哥來福", "a": "TWWH", "x": 587, "y": 7}, {"n": "Zabaniah", "a": "TWWH", "x": 581, "y": 6}, {"n": "Mr M1ll0", "a": "TWWH", "x": 584, "y": 2}, {"n": "Aryyyyz", "a": "TWWH", "x": 584, "y": 6}, {"n": "BOSS JHAY 21", "a": "TWWH", "x": 587, "y": 2}, {"n": "歐洲腫馬", "a": "TWWH", "x": 581, "y": 1}, {"n": "Rashmi05", "a": "TWWH", "x": 581, "y": 9}, {"n": "隨緣取樂", "a": "TWWH", "x": 593, "y": 6}, {"n": "Cheese Latte", "a": "TWWH", "x": 597, "y": 6}, {"n": "ZET DARAT 135", "a": "TWWH", "x": 590, "y": 9}, {"n": "gnks", "a": "TWWH", "x": 590, "y": 1}, {"n": "Mandala Game", "a": "TWWH", "x": 590, "y": 5}, {"n": "歐戀的爸爸", "a": "TWWH", "x": 594, "y": 9}, {"n": "小king", "a": "TWWH", "x": 594, "y": 1}, {"n": "贏贏美代子", "a": "TWWH", "x": 584, "y": 11}, {"n": "ShOKi", "a": "TWWH", "x": 584, "y": 17}, {"n": "Funkorama", "a": "TWWH", "x": 587, "y": 11}, {"n": "南投林美秀", "a": "TWWH", "x": 587, "y": 17}, {"n": "舊識布織稻", "a": "TWWH", "x": 581, "y": 18}, {"n": "Miseigi 真志", "a": "TWWH", "x": 581, "y": 12}, {"n": "DakotaEX", "a": "TWWH", "x": 584, "y": 14}, {"n": "RU上天台", "a": "TWWH", "x": 587, "y": 14}, {"n": "K Y U U", "a": "INDe", "x": 581, "y": 15}, {"n": "PH GAMING", "a": "TWWH", "x": 594, "y": 12}, {"n": "HARAZAKI  22", "a": "TWWH", "x": 598, "y": 12}, {"n": "有事請燒香", "a": "TWWH", "x": 590, "y": 17}, {"n": "BceeVØID", "a": "TWWH", "x": 590, "y": 14}, {"n": "sweeny 026", "a": "X75", "x": 497, "y": 29}, {"n": "Komandan 3fdd52093", "a": "X75", "x": 497, "y": 23}, {"n": "م DarkCooS", "a": "X75", "x": 505, "y": 28}, {"n": "Komandan 51bc42093", "a": "X75", "x": 509, "y": 37}, {"n": "Anni 00004", "a": "X75", "x": 509, "y": 34}, {"n": "Suziiee", "a": "INDe", "x": 533, "y": 38}, {"n": "NDishant", "a": "INDe", "x": 553, "y": 29}, {"n": "Ray1goblin", "a": "INDe", "x": 541, "y": 37}, {"n": "abi okala", "a": "INDe", "x": 545, "y": 33}, {"n": "pentolodut", "a": "INDe", "x": 545, "y": 37}, {"n": "omi maverick", "a": "INDe", "x": 549, "y": 33}, {"n": "Hkr4", "a": "INDe", "x": 549, "y": 37}, {"n": "Hαяѕнυ нєяє", "a": "INDe", "x": 553, "y": 37}, {"n": "Phueng C", "a": "INDe", "x": 557, "y": 35}, {"n": "Nuttc", "a": "INDe", "x": 557, "y": 38}, {"n": "Vick ᴵᴺᴰᵉ", "a": "INDe", "x": 557, "y": 32}, {"n": "Clone HAFAY", "a": "TWWH", "x": 575, "y": 22}, {"n": "Bu RW 007", "a": "TWWH", "x": 577, "y": 26}, {"n": "Hong茶拿鐵", "a": "TWWH", "x": 578, "y": 22}, {"n": "SK006", "a": "INDe", "x": 574, "y": 29}, {"n": "Commander 6870d2093", "a": "TWWH", "x": 577, "y": 29}, {"n": "Warisan Majapahit", "a": "TWWH", "x": 572, "y": 22}, {"n": "Gotme", "a": "INDe", "x": 574, "y": 26}, {"n": "Ankur Agarwal", "a": "INDe", "x": 560, "y": 38}, {"n": "Raw nak27", "a": "INDe", "x": 563, "y": 38}, {"n": "EightyIVᴵᴺᴰᵉ", "a": "INDe", "x": 566, "y": 32}, {"n": "KKLEE23", "a": "INDe", "x": 566, "y": 36}, {"n": "HolyHandsome", "a": "TWWH", "x": 569, "y": 32}, {"n": "盼", "a": "TWWH", "x": 578, "y": 36}, {"n": "Pruthvirajsinh444", "a": "INDe", "x": 574, "y": 33}, {"n": "兔子會咬人HAFAY", "a": "TWWH", "x": 574, "y": 39}, {"n": "TaskinTaj", "a": "INDe", "x": 570, "y": 36}, {"n": "95168", "a": "TWWH", "x": 578, "y": 39}, {"n": "Ab dot A", "a": "TWWH", "x": 578, "y": 33}, {"n": "部落戰士", "a": "TWWH", "x": 574, "y": 36}, {"n": "PRINCE KAILASH", "a": "TWWH", "x": 584, "y": 23}, {"n": "jjyytt", "a": "TWWH", "x": 584, "y": 20}, {"n": "Bang Kims", "a": "TWWH", "x": 587, "y": 20}, {"n": "Begal sadis", "a": "TWWH", "x": 587, "y": 24}, {"n": "nikki02", "a": "INDe", "x": 581, "y": 25}, {"n": "勁戰2", "a": "TWWH", "x": 581, "y": 21}, {"n": "Lyvvs", "a": "TWWH", "x": 584, "y": 29}, {"n": "Jai Chan", "a": "TWWH", "x": 584, "y": 26}, {"n": "Tralalax", "a": "TWWH", "x": 590, "y": 24}, {"n": "SCARL3T", "a": "TWWH", "x": 590, "y": 20}, {"n": "小騎士5238", "a": "TWWH", "x": 594, "y": 20}, {"n": "小天使乂", "a": "TWWH", "x": 597, "y": 24}, {"n": "Plengerrrrrrrr", "a": "TWWH", "x": 594, "y": 34}, {"n": "Devilgamersam", "a": "INDe", "x": 537, "y": 41}, {"n": "PiratesRMS", "a": "INDe", "x": 545, "y": 45}, {"n": "Daniel Tuk", "a": "INDe", "x": 545, "y": 41}, {"n": "JstAnthrYel", "a": "INDe", "x": 554, "y": 44}, {"n": "Saurav Rana", "a": "INDe", "x": 557, "y": 44}, {"n": "undizip", "a": "INDe", "x": 566, "y": 44}, {"n": "IamThesaurus", "a": "INDe", "x": 566, "y": 40}, {"n": "KakashiHatake42", "a": "INDe", "x": 560, "y": 41}, {"n": "Leo 0001", "a": "INDe", "x": 563, "y": 41}, {"n": "CosmicWarlord", "a": "INDe", "x": 570, "y": 43}, {"n": "夜星月辰", "a": "TWWH", "x": 575, "y": 43}, {"n": "Nyamnyam0", "a": "TWWH", "x": 570, "y": 40}, {"n": "Ravi Chandravanshi", "a": "INDe", "x": 578, "y": 43}, {"n": "Billy 927", "a": "TWWH", "x": 587, "y": 45}, {"n": "reksa87", "a": "TWWH", "x": 581, "y": 40}, {"n": "alot alot", "a": "TWWH", "x": 581, "y": 45}]};
-const KEY='tf93-hive-layout-v1';
-const BASE=JSON.parse(JSON.stringify(D.A));
-let P=JSON.parse(JSON.stringify(D.A));
-try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&typeof s==='object'){for(const n in s)if(P[n])P[n]=s[n]}}catch(e){}
-const C={bg:'#0f1524',panel:'#141c2f',grid:'#1b2540',grid5:'#24304f',mute:'#93a0bd',fg:'#eef1f8',furnace:'#e0453a',gold:'#f4b73b',mg:'#e67ad8',open:'#3fd39b',nb:'#3c4659',nbtx:'#c5cbd8',
- R5:'#c99312',R4:'#7a4fe0',R3:'#3a6ee8',R2:'#17946a',R1:'#c4571f',UN:'#5b6578'};
+const D={"members": [{"n": "DARK KNIGHT 18", "x": 497, "y": 448, "r": "R1", "set": false, "atk": false, "on": false}, {"n": "Ir Jazza", "x": 373, "y": 898, "r": "R1", "set": false, "atk": false, "on": false}, {"n": "Prakash patidar 1423", "x": 840, "y": 749, "r": "R2", "set": true, "atk": false, "on": false}, {"n": "tokyo9820", "x": 542, "y": 814, "r": "R3", "set": true, "atk": false, "on": false}, {"n": "MiLuna11", "x": 527, "y": 7, "r": "R1", "set": false, "atk": true, "on": true}, {"n": "cherryBombshell", "x": 528, "y": 1, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "Augustinnnn", "x": 537, "y": 9, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "Raguplays", "x": 537, "y": 5, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "DARIKKOSHA", "x": 537, "y": 2, "r": "R1", "set": true, "atk": false, "on": true}, {"n": "MingMax00", "x": 531, "y": 8, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "VELV3T", "x": 534, "y": 8, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "JhonWick 89", "x": 531, "y": 1, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "HARSH1212", "x": 531, "y": 5, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "ANISAWA", "x": 534, "y": 5, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "John Snow 겨울", "x": 534, "y": 1, "r": "R4", "set": true, "atk": true, "on": true}, {"n": "DadDaddy", "x": 529, "y": 18, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "luckyseno", "x": 529, "y": 11, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "fara shmara", "x": 537, "y": 17, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "Baby Miu", "x": 533, "y": 14, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "M A N N O", "x": 537, "y": 14, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "TADAKA", "x": 534, "y": 11, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "BinCommander 3d11", "x": 546, "y": 8, "r": "R4", "set": true, "atk": false, "on": true}, {"n": "Harsh ind", "x": 540, "y": 1, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "Gà Gô 11", "x": 540, "y": 9, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "WarMongerVish", "x": 549, "y": 8, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "侍の国", "x": 543, "y": 9, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "BANG J0SER", "x": 543, "y": 1, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "dhenba", "x": 546, "y": 5, "r": "R1", "set": true, "atk": false, "on": true}, {"n": "TфNE REBфRN", "x": 540, "y": 6, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "naka nè", "x": 549, "y": 5, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Nhn1189", "x": 543, "y": 6, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "AyaRi", "x": 546, "y": 2, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "fateofmaurielles", "x": 549, "y": 2, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "Ashely88", "x": 552, "y": 5, "r": "R4", "set": true, "atk": true, "on": true}, {"n": "BUBBLES MAY", "x": 552, "y": 9, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "k e y r a", "x": 555, "y": 5, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "BonnieTran", "x": 558, "y": 1, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "chabrueh", "x": 558, "y": 5, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "Mega Putri", "x": 552, "y": 2, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "I am Shinchan", "x": 555, "y": 2, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "TetsuyaTx", "x": 555, "y": 8, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Clone Nupa", "x": 558, "y": 8, "r": "R1", "set": true, "atk": false, "on": true}, {"n": "mơ iu bá khí", "x": 543, "y": 12, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "XoDarkLightoX", "x": 540, "y": 17, "r": "R1", "set": true, "atk": false, "on": true}, {"n": "DOCTOR KIT", "x": 549, "y": 12, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "LiONHEART", "x": 543, "y": 17, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "AXON 222", "x": 546, "y": 18, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "hestyyyy", "x": 549, "y": 18, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "QQhere", "x": 546, "y": 11, "r": "R3", "set": true, "atk": true, "on": true}, {"n": "Sheriffrakushka", "x": 540, "y": 12, "r": "R1", "set": true, "atk": false, "on": true}, {"n": "BUTTERCUP ZING", "x": 549, "y": 15, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "BLOSSOM JUNE", "x": 553, "y": 15, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "hwanglin", "x": 553, "y": 12, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "FishCanFly", "x": 553, "y": 18, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "RDKAS", "x": 558, "y": 12, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "NuPakachi", "x": 562, "y": 9, "r": "R4", "set": true, "atk": true, "on": true}, {"n": "Teana HảiTrà", "x": 571, "y": 4, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "rielz riels", "x": 561, "y": 12, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "Someth1nG", "x": 521, "y": 25, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Baron 077", "x": 537, "y": 21, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "MamaRudra", "x": 537, "y": 27, "r": "R4", "set": true, "atk": true, "on": true}, {"n": "KAPOL", "x": 537, "y": 24, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "PH0ENIXXX", "x": 531, "y": 21, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Rᴀʜᴜʟ", "x": 534, "y": 21, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Tabibii", "x": 529, "y": 32, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "Teana HT", "x": 533, "y": 30, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "ઇଓlueTequila", "x": 533, "y": 34, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Ɗoãn Đại Hiệp", "x": 537, "y": 30, "r": "R3", "set": true, "atk": true, "on": true}, {"n": "Pegasussssssssss", "x": 542, "y": 21, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "BharatDesh", "x": 545, "y": 29, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "Marlboromild", "x": 545, "y": 25, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "Yaammm", "x": 545, "y": 21, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Nathasya Pink", "x": 549, "y": 25, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "ρнσєиιאָ", "x": 549, "y": 21, "r": "R4", "set": true, "atk": true, "on": true}, {"n": "Kampp", "x": 541, "y": 27, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "ＲＥＨＡＡＮ", "x": 541, "y": 24, "r": "R4", "set": true, "atk": false, "on": true}, {"n": "Zenitya", "x": 553, "y": 21, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "Pink Nathasya", "x": 553, "y": 25, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "艾連葉卡EY", "x": 541, "y": 33, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "ᴱˡᶠ", "x": 549, "y": 30, "r": "R3", "set": true, "atk": false, "on": true}, {"n": "Hamishhhhh", "x": 541, "y": 30, "r": "R4", "set": true, "atk": true, "on": true}, {"n": "Ngoc174", "x": 553, "y": 33, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "R E VÂNO", "x": 553, "y": 41, "r": "R1", "set": false, "atk": false, "on": true}, {"n": "zxThor", "x": 557, "y": 41, "r": "R2", "set": true, "atk": false, "on": true}, {"n": "D1 O  N  E", "x": 553, "y": 50, "r": "R5", "set": true, "atk": true, "on": true}, {"n": "Motsdoux", "x": 579, "y": 50, "r": "R3", "set": true, "atk": false, "on": true}], "furnace": [562, 4], "nb": [{"a": "TWWH", "x": 601, "y": 1}, {"a": "TWWH", "x": 605, "y": 1}, {"a": "TWWH", "x": 609, "y": 5}, {"a": "TWWH", "x": 601, "y": 13}, {"a": "TWWH", "x": 601, "y": 17}, {"a": "TWWH", "x": 601, "y": 25}, {"a": "TWWH", "x": 601, "y": 29}, {"a": "LS02", "x": 489, "y": 1}, {"a": "LS02", "x": 489, "y": 5}, {"a": "LS02", "x": 493, "y": 1}, {"a": "LS02", "x": 493, "y": 5}, {"a": "", "x": 529, "y": 15}, {"a": "TWWH", "x": 569, "y": 9}, {"a": "TWWH", "x": 565, "y": 9}, {"a": "TWWH", "x": 574, "y": 1}, {"a": "TWWH", "x": 575, "y": 9}, {"a": "TWWH", "x": 578, "y": 9}, {"a": "TWWH", "x": 578, "y": 5}, {"a": "TWWH", "x": 575, "y": 6}, {"a": "TWWH", "x": 578, "y": 2}, {"a": "TWWH", "x": 572, "y": 7}, {"a": "TWWH", "x": 564, "y": 12}, {"a": "TWWH", "x": 567, "y": 12}, {"a": "TWWH", "x": 575, "y": 16}, {"a": "TWWH", "x": 575, "y": 12}, {"a": "TWWH", "x": 578, "y": 12}, {"a": "TWWH", "x": 578, "y": 18}, {"a": "TWWH", "x": 572, "y": 19}, {"a": "TWWH", "x": 575, "y": 19}, {"a": "TWWH", "x": 578, "y": 15}, {"a": "TWWH", "x": 572, "y": 12}, {"a": "TWWH", "x": 572, "y": 16}, {"a": "TWWH", "x": 584, "y": 1}, {"a": "TWWH", "x": 581, "y": 6}, {"a": "TWWH", "x": 584, "y": 6}, {"a": "TWWH", "x": 587, "y": 2}, {"a": "TWWH", "x": 587, "y": 8}, {"a": "TWWH", "x": 581, "y": 9}, {"a": "TWWH", "x": 581, "y": 1}, {"a": "TWWH", "x": 593, "y": 6}, {"a": "TWWH", "x": 597, "y": 6}, {"a": "TWWH", "x": 590, "y": 9}, {"a": "TWWH", "x": 590, "y": 5}, {"a": "TWWH", "x": 594, "y": 9}, {"a": "TWWH", "x": 594, "y": 1}, {"a": "TWWH", "x": 597, "y": 9}, {"a": "TWWH", "x": 590, "y": 2}, {"a": "TWWH", "x": 584, "y": 11}, {"a": "TWWH", "x": 584, "y": 17}, {"a": "TWWH", "x": 587, "y": 11}, {"a": "TWWH", "x": 587, "y": 17}, {"a": "TWWH", "x": 581, "y": 18}, {"a": "TWWH", "x": 581, "y": 12}, {"a": "TWWH", "x": 584, "y": 14}, {"a": "TWWH", "x": 587, "y": 14}, {"a": "TWWH", "x": 581, "y": 15}, {"a": "TWWH", "x": 598, "y": 12}, {"a": "TWWH", "x": 590, "y": 14}, {"a": "X75", "x": 493, "y": 29}, {"a": "X75", "x": 497, "y": 29}, {"a": "X75", "x": 497, "y": 23}, {"a": "X75", "x": 493, "y": 22}, {"a": "", "x": 487, "y": 38}, {"a": "X75", "x": 505, "y": 28}, {"a": "X75", "x": 501, "y": 23}, {"a": "X75", "x": 509, "y": 37}, {"a": "X75", "x": 509, "y": 34}, {"a": "INDe", "x": 533, "y": 38}, {"a": "INDe", "x": 553, "y": 29}, {"a": "INDe", "x": 541, "y": 37}, {"a": "INDe", "x": 545, "y": 33}, {"a": "INDe", "x": 545, "y": 37}, {"a": "INDe", "x": 549, "y": 33}, {"a": "INDe", "x": 549, "y": 37}, {"a": "INDe", "x": 553, "y": 37}, {"a": "INDe", "x": 557, "y": 35}, {"a": "INDe", "x": 557, "y": 38}, {"a": "INDe", "x": 557, "y": 32}, {"a": "TWWH", "x": 574, "y": 29}, {"a": "TWWH", "x": 577, "y": 29}, {"a": "TWWH", "x": 572, "y": 22}, {"a": "INDe", "x": 574, "y": 26}, {"a": "TWWH", "x": 575, "y": 22}, {"a": "TWWH", "x": 577, "y": 26}, {"a": "TWWH", "x": 578, "y": 22}, {"a": "INDe", "x": 560, "y": 38}, {"a": "INDe", "x": 563, "y": 38}, {"a": "INDe", "x": 566, "y": 36}, {"a": "INDe", "x": 566, "y": 32}, {"a": "TWWH", "x": 578, "y": 36}, {"a": "INDe", "x": 570, "y": 36}, {"a": "TWWH", "x": 578, "y": 39}, {"a": "INDe", "x": 570, "y": 32}, {"a": "TWWH", "x": 574, "y": 36}, {"a": "INDe", "x": 574, "y": 32}, {"a": "TWWH", "x": 584, "y": 23}, {"a": "TWWH", "x": 584, "y": 20}, {"a": "TWWH", "x": 587, "y": 24}, {"a": "INDe", "x": 580, "y": 29}, {"a": "INDe", "x": 581, "y": 25}, {"a": "TWWH", "x": 581, "y": 21}, {"a": "TWWH", "x": 584, "y": 29}, {"a": "TWWH", "x": 587, "y": 29}, {"a": "TWWH", "x": 584, "y": 26}, {"a": "TWWH", "x": 590, "y": 24}, {"a": "TWWH", "x": 590, "y": 20}, {"a": "TWWH", "x": 594, "y": 20}, {"a": "TWWH", "x": 597, "y": 24}, {"a": "TWWH", "x": 590, "y": 29}, {"a": "TWWH", "x": 594, "y": 34}, {"a": "INDe", "x": 537, "y": 41}, {"a": "INDe", "x": 541, "y": 49}, {"a": "TWWH", "x": 549, "y": 44}, {"a": "INDe", "x": 545, "y": 45}, {"a": "INDe", "x": 545, "y": 49}, {"a": "INDe", "x": 549, "y": 47}, {"a": "INDe", "x": 553, "y": 47}, {"a": "INDe", "x": 557, "y": 47}, {"a": "TWWH", "x": 553, "y": 44}, {"a": "INDe", "x": 557, "y": 44}, {"a": "INDe", "x": 549, "y": 51}, {"a": "INDe", "x": 555, "y": 55}, {"a": "INDe", "x": 552, "y": 54}, {"a": "INDe", "x": 557, "y": 52}, {"a": "TWWH", "x": 560, "y": 44}, {"a": "TWWH", "x": 569, "y": 47}, {"a": "INDe", "x": 563, "y": 46}, {"a": "INDe", "x": 563, "y": 42}, {"a": "INDe", "x": 566, "y": 44}, {"a": "INDe", "x": 566, "y": 40}, {"a": "INDe", "x": 560, "y": 47}, {"a": "INDe", "x": 560, "y": 41}, {"a": "INDe", "x": 566, "y": 47}, {"a": "INDe", "x": 578, "y": 44}, {"a": "TWWH", "x": 575, "y": 46}, {"a": "INDe", "x": 570, "y": 43}, {"a": "INDe", "x": 572, "y": 47}, {"a": "INDe", "x": 573, "y": 43}, {"a": "TWWH", "x": 570, "y": 40}, {"a": "INDe", "x": 574, "y": 40}, {"a": "INDe", "x": 561, "y": 50}, {"a": "INDe", "x": 561, "y": 58}, {"a": "INDe", "x": 562, "y": 54}, {"a": "INDe", "x": 566, "y": 54}, {"a": "INDe", "x": 566, "y": 50}, {"a": "TWWH", "x": 569, "y": 50}, {"a": "INDe", "x": 566, "y": 57}, {"a": "INDe", "x": 575, "y": 50}, {"a": "INDe", "x": 573, "y": 53}, {"a": "INDe", "x": 572, "y": 50}, {"a": "TWWH", "x": 587, "y": 45}, {"a": "TWWH", "x": 581, "y": 40}, {"a": "TWWH", "x": 581, "y": 45}, {"a": "INDe", "x": 582, "y": 49}, {"a": "INDe", "x": 593, "y": 46}, {"a": "INDe", "x": 585, "y": 53}, {"a": "INDe", "x": 589, "y": 57}, {"a": "INDe", "x": 589, "y": 53}, {"a": "INDe", "x": 582, "y": 57}, {"a": "INDe", "x": 593, "y": 50}, {"a": "INDe", "x": 597, "y": 50}, {"a": "INDe", "x": 545, "y": 60}, {"a": "INDe", "x": 566, "y": 60}], "box": [488, 612, 0, 62], "scan": "2026-10-12"};
+const KEY='tf93-hive-plan-v2';
+const [X0,X1,Y0,Y1]=D.box,S=28,PAD=36;
+const W=(X1-X0)*S+PAD+10,H=(Y1-Y0)*S+PAD;
+const C={bg:'#0f1524',panel:'#141c2f',grid:'#1a2440',grid5:'#26324f',mute:'#93a0bd',fg:'#eef1f8',furnace:'#e0453a',gold:'#f4b73b',mg:'#e67ad8',ok:'#3fd39b',red:'#ff6b6b',nb:'#3c4659',nbtx:'#c5cbd8',
+ R5:'#c99312',R4:'#7a4fe0',R3:'#3a6ee8',R2:'#17946a',R1:'#c4571f'};
 const FD='Chakra Petch, Arial Narrow, Arial, sans-serif',FB='IBM Plex Sans, Segoe UI, Arial, sans-serif',FM='IBM Plex Mono, Consolas, monospace';
-const RN={R5:'R5',R4:'R4',R3:'R3',R2:'R2',R1:'R1',UN:'—'};
-const ATK=new Set(['D1 O  N  E','Kᴇɴɴ','John Snow 겨울','Hamishhhhh','Ashely88','MamaRudra','Ɗoãn Đại Hiệp','QQhere','MiLuna11','NuPakachi','ρнσєиιאָ']);
-const MG={x0:531,x1:540,y0:23,y1:32};
-const X0=528,X1=568,Y0=0,Y1=33,S=26,PAD=34;
-const W=(X1-X0)*S+PAD+8,H=(Y1-Y0)*S+PAD;
+const RANKS=['R5','R4','R3','R2','R1'];
+const mem=Object.fromEntries(D.members.map(m=>[m.n,m]));
+function fresh(){const s={pos:{},rank:{},mg:[517,10],mgOn:true};D.members.forEach(m=>{s.pos[m.n]=m.on?[m.x,m.y]:null;s.rank[m.n]=m.r});return s}
+let st=fresh();
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.pos){for(const n in s.pos)if(n in st.pos)st.pos[n]=s.pos[n];for(const n in s.rank||{})if(n in st.rank&&RANKS.includes(s.rank[n]))st.rank[n]=s.rank[n];if(Array.isArray(s.mg))st.mg=s.mg;if(typeof s.mgOn==='boolean')st.mgOn=s.mgOn}}catch(e){}
+const hist=[];let sel=null,edit=false,z=1,placing=null;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+function snap(){hist.push(JSON.stringify(st));if(hist.length>80)hist.shift()}
 const board=document.getElementById('board'),svg=document.getElementById('map');
 svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
 const ns='http://www.w3.org/2000/svg';
@@ -112,129 +128,156 @@ function el(n,a,p){const e=document.createElementNS(ns,n);for(const k in a)e.set
 function tx(p,s,a){const t=el('text',a,p);t.textContent=s;return t}
 const sx=x=>PAD+(x-X0)*S, sy=y=>(Y1-y)*S;
 const box=(x,y,w=3,h=3)=>({x:sx(x),y:sy(y+h),w:w*S,h:h*S});
-const mem=Object.fromEntries(D.members.map(m=>[m.n,m]));
-const blocked=[[D.furnace[0],D.furnace[1]],...D.neighbours.map(n=>[n.x,n.y])];
-const inMG=s=>s[0]>=MG.x0&&s[0]<MG.x1&&s[1]>=MG.y0&&s[1]<MG.y1;
-let sel=null,edit=false,z=1,hist=[];
-function save(){try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}}
-function status(m,to){if(m.far)return['far','Teleport in'];const d=Math.max(Math.abs(to[0]-m.x),Math.abs(to[1]-m.y));return d===0?['stay','Stay']:d<=2?['snap','Nudge '+d]:['move','Move '+d]}
-function wrapName(n){const c=[...n.replace(/\s+/g,' ').trim()];if(c.length<=10)return[c.join('')];const a=c.slice(0,10).join(''),b=c.slice(10,19).join('');return[a,b+(c.length>19?'…':'')]}
-function openSlots(){const used=new Set(Object.values(P).map(p=>p.join(',')));return D.hive.filter(s=>!used.has(s.join(','))&&!inMG(s))}
+const blocked=()=>[D.furnace,...D.nb.map(n=>[n.x,n.y])];
+const hit=(a,b)=>Math.abs(a[0]-b[0])<3&&Math.abs(a[1]-b[1])<3;
+function clampP(p){return[Math.max(X0,Math.min(X1-3,p[0])),Math.max(Y0,Math.min(Y1-3,p[1]))]}
+function check(n,p){if(blocked().some(b=>hit(b,p)))return{bad:'That spot has the Furnace or another alliance.'};
+ const same=Object.keys(st.pos).find(k=>k!==n&&st.pos[k]&&st.pos[k][0]===p[0]&&st.pos[k][1]===p[1]);
+ const clash=Object.keys(st.pos).find(k=>k!==n&&k!==same&&st.pos[k]&&hit(st.pos[k],p));
+ if(clash)return{bad:`Overlaps ${clash}.`};return{swap:same}}
+function say(t){document.getElementById('msg').textContent=t}
+function nameLines(n){const c=[...n.replace(/\s+/g,' ').trim()];if(c.length<=10)return[c.join('')];return[c.slice(0,10).join(''),c.slice(10,19).join('')+(c.length>19?'…':'')]}
+let layerB;
 function draw(){
  svg.innerHTML='';
  el('rect',{x:0,y:0,width:W,height:H,fill:C.panel});
  for(let x=X0;x<=X1;x++)el('line',{x1:sx(x),y1:0,x2:sx(x),y2:sy(Y0),stroke:x%5?C.grid:C.grid5,'stroke-width':x%5?0.6:1});
  for(let y=Y0;y<=Y1;y++)el('line',{x1:sx(X0),y1:sy(y),x2:sx(X1),y2:sy(y),stroke:y%5?C.grid:C.grid5,'stroke-width':y%5?0.6:1});
- for(let x=530;x<=X1;x+=5)tx(svg,x,{x:sx(x),y:H-12,fill:C.mute,'font-size':12,'text-anchor':'middle','font-family':FM});
- for(let y=0;y<=30;y+=5)tx(svg,y,{x:PAD-6,y:sy(y)+4,fill:C.mute,'font-size':12,'text-anchor':'end','font-family':FM});
- D.neighbours.forEach(n=>{if(n.x+3<=X0||n.x>=X1||n.y>=Y1)return;const b=box(n.x,n.y);el('rect',{x:b.x+2,y:b.y+2,width:b.w-4,height:b.h-4,rx:6,fill:C.nb,'fill-opacity':.55});tx(svg,n.a||'no tag',{x:b.x+b.w/2,y:b.y+b.h/2+4,'text-anchor':'middle',fill:C.nbtx,'font-size':11,'font-family':FD})});
- const mb=box(MG.x0,MG.y0,MG.x1-MG.x0,MG.y1-MG.y0);el('rect',{x:mb.x+2,y:mb.y+2,width:mb.w-4,height:mb.h-4,rx:10,fill:C.mg,'fill-opacity':.12,stroke:C.mg,'stroke-dasharray':'8 6','stroke-width':2.5});
- [['MG PLOT',18,-14],['Marshal’s Guard',12,8],['keep EMPTY',12,24]].forEach(([s,f,dy])=>tx(svg,s,{x:mb.x+mb.w/2,y:mb.y+mb.h/2+dy,'text-anchor':'middle',fill:C.mg,'font-size':f,'font-weight':700,'font-family':FD}));
- openSlots().forEach(s=>{const b=box(s[0],s[1]);el('rect',{x:b.x+4,y:b.y+4,width:b.w-8,height:b.h-8,rx:7,fill:C.open,'fill-opacity':.08,stroke:C.open,'stroke-dasharray':'5 4','stroke-width':2});
-  tx(svg,'OPEN',{x:b.x+b.w/2,y:b.y+b.h/2-2,'text-anchor':'middle',fill:C.open,'font-size':12,'font-weight':700,'font-family':FD});
-  tx(svg,`(${s[0]},${s[1]})`,{x:b.x+b.w/2,y:b.y+b.h-12,'text-anchor':'middle',fill:C.open,'font-size':9,'font-family':FM})});
+ for(let x=Math.ceil(X0/5)*5;x<=X1;x+=5)tx(svg,x,{x:sx(x),y:H-12,fill:C.mute,'font-size':12,'text-anchor':'middle','font-family':FM});
+ for(let y=0;y<=Y1;y+=5)tx(svg,y,{x:PAD-6,y:sy(y)+4,fill:C.mute,'font-size':12,'text-anchor':'end','font-family':FM});
+ D.nb.forEach(n=>{const b=box(n.x,n.y);el('rect',{x:b.x+2,y:b.y+2,width:b.w-4,height:b.h-4,rx:6,fill:C.nb,'fill-opacity':.5});tx(svg,n.a||'no tag',{x:b.x+b.w/2,y:b.y+b.h/2+4,'text-anchor':'middle',fill:C.nbtx,'font-size':11,'font-family':FD})});
+ if(st.mgOn){const m=box(st.mg[0],st.mg[1],9,9);const g=el('g',{class:'mgp'});
+  el('rect',{x:m.x+2,y:m.y+2,width:m.w-4,height:m.h-4,rx:10,fill:C.mg,'fill-opacity':.12,stroke:C.mg,'stroke-dasharray':'8 6','stroke-width':2.5},g);
+  [['MG PLOT',18,-14],['Marshal’s Guard',12,8],[`(${st.mg[0]}, ${st.mg[1]})`,11,26]].forEach(([s,f,dy])=>tx(g,s,{x:m.x+m.w/2,y:m.y+m.h/2+dy,'text-anchor':'middle',fill:C.mg,'font-size':f,'font-weight':700,'font-family':FD}));
+  g.addEventListener('pointerdown',e=>startDrag(e,g,'__mg'))}
  const f=box(D.furnace[0],D.furnace[1]);el('rect',{x:f.x+2,y:f.y+2,width:f.w-4,height:f.h-4,rx:8,fill:C.furnace,stroke:'#ffb3ad','stroke-width':2});
- tx(svg,'TF93',{x:f.x+f.w/2,y:f.y+f.h/2,'text-anchor':'middle',fill:'#fff','font-size':15,'font-weight':700,'font-family':FD});
+ tx(svg,'TF93',{x:f.x+f.w/2,y:f.y+f.h/2,'text-anchor':'middle',fill:'#fff','font-size':16,'font-weight':700,'font-family':FD});
  tx(svg,'FURNACE',{x:f.x+f.w/2,y:f.y+f.h/2+16,'text-anchor':'middle',fill:'#ffffffb3','font-size':9,'font-family':FM});
- for(const n in P)drawBase(n);
+ layerB=el('g',{});
+ for(const n in st.pos)if(st.pos[n])drawBase(n);
 }
-function drawBase(n){const m=mem[n],p=P[n],b=box(p[0],p[1]);const on=!sel||sel===n;
- const g=el('g',{class:'base',tabindex:0,role:'button','aria-label':`${n} at ${p[0]}, ${p[1]}`,opacity:on?1:.3,'data-n':n});
- if(ATK.has(n))el('rect',{x:b.x+1,y:b.y+1,width:b.w-2,height:b.h-2,rx:9,fill:'none',stroke:C.gold,'stroke-width':3},g);
- el('rect',{x:b.x+5,y:b.y+5,width:b.w-10,height:b.h-10,rx:6,fill:C[m.r],stroke:sel===n?'#ffffff':'#ffffff33','stroke-width':sel===n?3:1},g);
- const L=wrapName(n);L.forEach((s,i)=>tx(g,s,{x:b.x+b.w/2,y:b.y+b.h/2-(L.length-1)*7+i*14-4,'text-anchor':'middle',fill:'#fff','font-size':11,'font-weight':600,'font-family':FB}));
- tx(g,`(${p[0]},${p[1]})`,{x:b.x+b.w/2,y:b.y+b.h-11,'text-anchor':'middle',fill:'#ffffffb3','font-size':9,'font-family':FM});
- const st=status(m,p)[0];if(st==='far'||st==='move')tx(g,st==='far'?'TP':'MV',{x:b.x+b.w-9,y:b.y+15,'text-anchor':'end','font-size':8,'font-weight':700,fill:st==='far'?'#ffd1d1':'#ffe7b0','font-family':FM});
- el('title',{},g).textContent=`${n} (${RN[m.r]}) now ${m.x},${m.y} → ${p[0]},${p[1]}`;
+function drawBase(n){const p=st.pos[n],b=box(p[0],p[1]),m=mem[n];
+ const g=el('g',{class:'base',tabindex:0,role:'button','aria-label':`${n} at ${p[0]}, ${p[1]}`,'data-n':n,opacity:!sel||sel===n?1:.45},layerB);
+ if(m.atk)el('rect',{x:b.x+1,y:b.y+1,width:b.w-2,height:b.h-2,rx:9,fill:'none',stroke:C.gold,'stroke-width':3},g);
+ el('rect',{x:b.x+5,y:b.y+5,width:b.w-10,height:b.h-10,rx:6,fill:C[st.rank[n]],stroke:sel===n?'#ffffff':'#ffffff33','stroke-width':sel===n?3:1},g);
+ const L=nameLines(n);L.forEach((s,i)=>tx(g,s,{x:b.x+b.w/2,y:b.y+b.h/2-(L.length-1)*7+i*14-4,'text-anchor':'middle',fill:'#fff','font-size':11.5,'font-weight':600,'font-family':FB}));
+ tx(g,`(${p[0]},${p[1]})`,{x:b.x+b.w/2,y:b.y+b.h-11,'text-anchor':'middle',fill:'#ffffffcc','font-size':10,'font-family':FM,class:'co'});
+ el('title',{},g).textContent=`${n} · ${st.rank[n]} · (${p[0]}, ${p[1]})`;
  g.addEventListener('pointerdown',e=>startDrag(e,g,n));
  g.addEventListener('keydown',e=>{if(e.key==='Enter')pick(n)});
 }
-// ---- drag & drop ----
+// ---- dragging ----
 let drag=null;
 function svgPt(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;return pt.matrixTransform(svg.getScreenCTM().inverse())}
 function startDrag(e,g,n){
- if(!edit){return} e.preventDefault();
- const p0=svgPt(e);g.parentNode.appendChild(g);drag={g,n,p0,moved:false,id:e.pointerId};try{g.setPointerCapture(e.pointerId)}catch(_){}g.classList.add('drag');
+ if(placing)return;
+ if(!edit){if(n!=='__mg')pick(n);return}
+ e.preventDefault();e.stopPropagation();
+ g.parentNode.appendChild(g);drag={g,n,p0:svgPt(e),moved:false,id:e.pointerId,start:n==='__mg'?st.mg.slice():st.pos[n].slice()};
+ try{g.setPointerCapture(e.pointerId)}catch(_){}
 }
-svg.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const p=svgPt(e),dx=p.x-drag.p0.x,dy=p.y-drag.p0.y;if(Math.hypot(dx,dy)>4)drag.moved=true;drag.g.setAttribute('transform',`translate(${dx},${dy})`);
- const r=board.getBoundingClientRect(),m=40;if(e.clientX>r.right-m)board.scrollLeft+=12;if(e.clientX<r.left+m)board.scrollLeft-=12;if(e.clientY>r.bottom-m)board.scrollTop+=12;if(e.clientY<r.top+m)board.scrollTop-=12});
-function endDrag(e){if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;d.g.classList.remove('drag');
- if(!d.moved){d.g.removeAttribute('transform');pick(d.n);return}
- const p=svgPt(e),old=P[d.n];const dx=(p.x-d.p0.x)/S,dy=-(p.y-d.p0.y)/S;
- let nx=old[0]+dx,ny=old[1]+dy;nx=531+3*Math.round((nx-531)/3);ny=2+3*Math.round((ny-2)/3);
- nx=Math.max(X0,Math.min(X1-3,nx));ny=Math.max(Y0,Math.min(Y1-3,ny));
- if(nx===old[0]&&ny===old[1]){draw();return}
- if(blocked.some(b=>Math.abs(b[0]-nx)<3&&Math.abs(b[1]-ny)<3)){say('That spot is taken by the Furnace or another alliance. Base moved back.');draw();return}
- const other=Object.keys(P).find(k=>k!==d.n&&P[k][0]===nx&&P[k][1]===ny);
- const clash=Object.keys(P).find(k=>k!==d.n&&k!==other&&Math.abs(P[k][0]-nx)<3&&Math.abs(P[k][1]-ny)<3);
- if(clash){say(`Overlaps ${clash}. Base moved back.`);draw();return}
- hist.push(JSON.stringify(P));
- if(other){P[other]=old;say(`Swapped ${d.n} and ${other}.`)}else say(`${d.n} moved to (${nx}, ${ny}).`);
- P[d.n]=[nx,ny];sel=d.n;save();refresh()}
+function target(d,e){const p=svgPt(e);return clampP([d.start[0]+Math.round((p.x-d.p0.x)/S),d.start[1]-Math.round((p.y-d.p0.y)/S)])}
+svg.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const p=svgPt(e),dx=p.x-drag.p0.x,dy=p.y-drag.p0.y;if(Math.hypot(dx,dy)>4)drag.moved=true;
+ const t=target(drag,e);const ddx=(t[0]-drag.start[0])*S,ddy=-(t[1]-drag.start[1])*S;drag.g.setAttribute('transform',`translate(${ddx},${ddy})`);
+ const co=drag.g.querySelector('.co');if(co)co.textContent=`(${t[0]},${t[1]})`;
+ if(drag.n!=='__mg'){const ok=!check(drag.n,t).bad;drag.g.querySelector('rect:last-of-type')&&drag.g.setAttribute('opacity',ok?1:.55)}
+ const r=board.getBoundingClientRect(),m=40;if(e.clientX>r.right-m)board.scrollLeft+=14;if(e.clientX<r.left+m)board.scrollLeft-=14;if(e.clientY>r.bottom-m)board.scrollTop+=14;if(e.clientY<r.top+m)board.scrollTop-=14});
+function endDrag(e){if(!drag||e.pointerId!==drag.id)return;const d=drag;drag=null;
+ if(!d.moved){draw();if(d.n!=='__mg')pick(d.n);return}
+ const t=target(d,e);
+ if(d.n==='__mg'){snap();st.mg=t;save();draw();say(`MG plot moved to (${t[0]}, ${t[1]}).`);return}
+ moveTo(d.n,t)}
 svg.addEventListener('pointerup',endDrag);svg.addEventListener('pointercancel',endDrag);
-svg.addEventListener('click',e=>{if(edit)return;const g=e.target.closest('.base');if(g)pick(g.dataset.n)});
-function say(t){document.getElementById('msg').textContent=t}
+function moveTo(n,t){t=clampP(t);const c=check(n,t);if(c.bad){say(c.bad+' Base not moved.');refresh();return false}
+ snap();const old=st.pos[n];if(c.swap){st.pos[c.swap]=old;say(`Swapped ${n} and ${c.swap}.`)}else say(`${n} moved to (${t[0]}, ${t[1]}).`);
+ st.pos[n]=t;sel=n;save();refresh();return true}
+// tap empty map to place
+svg.addEventListener('click',e=>{if(!placing||e.target.closest('.base'))return;const p=svgPt(e);
+ const t=clampP([Math.round(X0+(p.x-PAD)/S-1.5),Math.round(Y1-p.y/S-1.5)]);const n=placing;placing=null;board.classList.remove('placing');
+ if(!moveTo(n,t))say(`Could not place ${n} there. Tap "Pick spot on map" to try again.`)});
 // ---- zoom ----
-function setZoom(nz,cx,cy){nz=Math.max(.35,Math.min(3,nz));const r=board.getBoundingClientRect();cx=cx??r.width/2;cy=cy??r.height/2;
+function setZoom(nz,cx,cy){nz=Math.max(.25,Math.min(3,nz));const r=board.getBoundingClientRect();cx=cx??r.width/2;cy=cy??r.height/2;
  const fx=(board.scrollLeft+cx)/(W*z),fy=(board.scrollTop+cy)/(H*z);z=nz;svg.setAttribute('width',W*z);svg.setAttribute('height',H*z);
  board.scrollLeft=fx*W*z-cx;board.scrollTop=fy*H*z-cy;document.getElementById('zl').textContent=Math.round(z*100)+'%'}
-function fit(){const r=board.getBoundingClientRect();setZoom(Math.min((r.width-2)/W,1));board.scrollLeft=board.scrollWidth}
+function focusArea(x0,x1,y0,y1){const r=board.getBoundingClientRect();const nz=Math.min(r.width/((x1-x0)*S+PAD),r.height/((y1-y0)*S+PAD),2);setZoom(nz);
+ board.scrollLeft=(sx(x0)-PAD/2)*z;board.scrollTop=sy(y1)*z}
+function fitHive(){const ps=Object.values(st.pos).filter(Boolean);const xs=ps.map(p=>p[0]),ys=ps.map(p=>p[1]);
+ focusArea(Math.max(X0,Math.min(...xs,D.furnace[0])-3),Math.min(X1,Math.max(...xs,D.furnace[0])+6),Y0,Math.min(Y1,Math.max(...ys)+6))}
 document.getElementById('zin').onclick=()=>setZoom(z*1.25);
 document.getElementById('zout').onclick=()=>setZoom(z/1.25);
-document.getElementById('zfit').onclick=fit;
+document.getElementById('zfit').onclick=fitHive;
+document.getElementById('zall').onclick=()=>{const r=board.getBoundingClientRect();setZoom(Math.min(r.width/W,r.height/H));board.scrollLeft=0;board.scrollTop=0};
 board.addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();const r=board.getBoundingClientRect();setZoom(z*(e.deltaY<0?1.1:1/1.1),e.clientX-r.left,e.clientY-r.top)},{passive:false});
 let pinch=null;
 board.addEventListener('touchstart',e=>{if(e.touches.length===2&&!drag){const[a,b]=e.touches;pinch={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),z}}},{passive:true});
-board.addEventListener('touchmove',e=>{if(pinch&&e.touches.length===2){e.preventDefault();const[a,b]=e.touches,r=board.getBoundingClientRect();const d=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);setZoom(pinch.z*d/pinch.d,(a.clientX+b.clientX)/2-r.left,(a.clientY+b.clientY)/2-r.top)}},{passive:false});
+board.addEventListener('touchmove',e=>{if(pinch&&e.touches.length===2){e.preventDefault();const[a,b]=e.touches,r=board.getBoundingClientRect();setZoom(pinch.z*Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)/pinch.d,(a.clientX+b.clientX)/2-r.left,(a.clientY+b.clientY)/2-r.top)}},{passive:false});
 board.addEventListener('touchend',e=>{if(e.touches.length<2)pinch=null});
-// ---- edit controls ----
+// ---- toolbar ----
 const eb=document.getElementById('edit');
-eb.onclick=()=>{edit=!edit;eb.setAttribute('aria-pressed',edit);eb.textContent='Drag & drop: '+(edit?'on':'off');board.classList.toggle('edit',edit);say(edit?'Drag a base to a new spot. Drop it on another base to swap them.':'Drag & drop is off. Tap a base to see its details.')};
-document.getElementById('undo').onclick=()=>{if(!hist.length){say('Nothing to undo.');return}P=JSON.parse(hist.pop());save();refresh();say('Last move undone.')};
+eb.onclick=()=>{edit=!edit;eb.setAttribute('aria-pressed',edit);eb.textContent='Edit layout: '+(edit?'on':'off');board.classList.toggle('edit',edit);say(edit?'Drag any base or the MG plot. Drop a base exactly on another to swap them.':'Edit layout is off. Tap a base to see it.')};
+document.getElementById('undo').onclick=()=>{if(!hist.length){say('Nothing to undo.');return}st=JSON.parse(hist.pop());save();refresh();say('Last change undone.')};
 const rb=document.getElementById('reset');let armed=false;
-rb.onclick=()=>{if(!armed){armed=true;rb.textContent='Tap again to reset';say('This puts every base back to the original lineup.');setTimeout(()=>{armed=false;rb.textContent='Reset layout'},3000);return}
- armed=false;rb.textContent='Reset layout';hist.push(JSON.stringify(P));P=JSON.parse(JSON.stringify(BASE));save();refresh();say('Layout reset to the original lineup.')};
-// ---- PNG export ----
+rb.onclick=()=>{if(!armed){armed=true;rb.textContent='Tap again to reset';say('This puts every base back where the scan found it and clears your rank changes.');setTimeout(()=>{armed=false;rb.textContent='Reset to scan'},3000);return}
+ armed=false;rb.textContent='Reset to scan';snap();st=fresh();save();refresh();say('Layout reset to the scan positions.')};
+const mgt=document.getElementById('mgt');
+function mgLabel(){mgt.setAttribute('aria-pressed',st.mgOn);mgt.textContent='MG plot: '+(st.mgOn?'shown':'hidden')}
+mgt.onclick=()=>{snap();st.mgOn=!st.mgOn;save();mgLabel();draw()};
+// ---- PNG ----
 document.getElementById('png').onclick=async()=>{
  const keep=sel;sel=null;draw();
  const clone=svg.cloneNode(true);clone.setAttribute('width',W);clone.setAttribute('height',H);clone.querySelectorAll('title').forEach(t=>t.remove());
  const src=new XMLSerializer().serializeToString(clone);sel=keep;draw();
  const img=new Image();const url=URL.createObjectURL(new Blob([src],{type:'image/svg+xml;charset=utf-8'}));
- img.onload=()=>{const k=2,HD=90,LG=40;const cv=document.createElement('canvas');cv.width=(W+40)*k;cv.height=(H+HD+LG+20)*k;const c=cv.getContext('2d');c.scale(k,k);
-  c.fillStyle=C.bg;c.fillRect(0,0,W+40,H+HD+LG+20);
+ img.onload=()=>{const k=1.5,HD=90,LG=40,FT=40;const cv=document.createElement('canvas');cv.width=(W+40)*k;cv.height=(H+HD+LG+FT)*k;const c=cv.getContext('2d');c.scale(k,k);
+  c.fillStyle=C.bg;c.fillRect(0,0,W+40,H+HD+LG+FT);
   c.fillStyle=C.fg;c.font='700 34px '+FD;c.fillText('TF93 · ALLIANCE HIVE FORMATION',20,46);
   c.fillStyle=C.mute;c.font='16px '+FB;c.fillText('Furnace (562, 4) · server 2093 · '+new Date().toISOString().slice(0,10),20,74);
-  let lx=20;const ly=HD+14;[['R5',C.R5],['R4',C.R4],['R3',C.R3],['R2',C.R2],['R1',C.R1],['Unranked',C.UN],['Attack team',null,C.gold],['MG plot',null,C.mg],['Open slot',null,C.open]].forEach(([t,f,s])=>{
+  let lx=20;const ly=HD+14;[['R5',C.R5],['R4',C.R4],['R3',C.R3],['R2',C.R2],['R1',C.R1],['Attack team',null,C.gold],['MG plot',null,C.mg]].forEach(([t,f,s])=>{
    if(f){c.fillStyle=f;c.fillRect(lx,ly-12,15,15)}else{c.strokeStyle=s;c.lineWidth=2.5;c.strokeRect(lx+1,ly-11,13,13)}c.fillStyle=s||C.fg;c.font='600 14px '+FB;c.fillText(t,lx+21,ly);lx+=c.measureText(t).width+44});
   c.drawImage(img,20,HD+LG,W,H);URL.revokeObjectURL(url);
+  c.fillStyle=C.mute;c.font='14px '+FB;c.fillText('Hive map by ',20,HD+LG+H+26);const w0=c.measureText('Hive map by ').width;c.fillStyle=C.gold;c.font='700 14px '+FD;c.fillText('MamaRudra',20+w0,HD+LG+H+26);
   cv.toBlob(async b=>{const dl=window.claude?.use?await window.claude.use('downloads').catch(()=>null):null;
    if(dl){try{await dl.save({filename:'tf93-hive-map.png',data:b});say('PNG saved as tf93-hive-map.png.')}catch(err){say(err&&err.code==='declined'?'Download cancelled.':'Download is not available here.')}return}
    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='tf93-hive-map.png';document.body.appendChild(a);a.click();a.remove();say('PNG saved as tf93-hive-map.png.')},'image/png')};
  img.onerror=()=>say('Could not build the PNG in this browser.');img.src=url};
-// ---- panels ----
-function pick(n){sel=sel===n?null:n;document.getElementById('q').value=sel||'';card();draw()}
-function card(){const c=document.getElementById('card');if(!sel){c.hidden=true;return}const m=mem[sel],p=P[sel],[k,l]=status(m,p);c.hidden=false;
- c.innerHTML=`<div class="n"></div><div>${RN[m.r]}${ATK.has(sel)?' · attack team':''} · now (${m.x}, ${m.y}) → <b style="color:var(--gold)">(${p[0]}, ${p[1]})</b> · ${l}</div>`;c.querySelector('.n').textContent=sel}
-function table(){const ord={R5:0,R4:1,R3:2,R2:3,R1:4,UN:5};const tb=document.getElementById('tb');tb.innerHTML='';const cnt={stay:0,snap:0,move:0,far:0};
- D.members.slice().sort((a,b)=>ord[a.r]-ord[b.r]||a.n.localeCompare(b.n)).forEach(m=>{const p=P[m.n],[k,l]=status(m,p);cnt[k]++;const tr=document.createElement('tr');
-  tr.innerHTML=`<td></td><td><span class="rk" style="background:${C[m.r]}">${RN[m.r]}</span></td><td class="c">${m.x}, ${m.y}</td><td class="c"><b>${p[0]}, ${p[1]}</b></td><td><span class="st ${k}">${l}</span></td>`;
-  tr.firstChild.textContent=m.n+(ATK.has(m.n)?'  ★':'');tr.onclick=()=>{pick(m.n);board.scrollIntoView({behavior:'smooth',block:'center'})};tb.appendChild(tr)});
- const edited=Object.keys(P).filter(n=>P[n][0]!==BASE[n][0]||P[n][1]!==BASE[n][1]).length;
- document.getElementById('sum').innerHTML=`<span>Stay <b>${cnt.stay}</b></span><span>Nudge 1–2 tiles <b>${cnt.snap}</b></span><span>Move in hive <b>${cnt.move}</b></span><span>Teleport in <b>${cnt.far}</b></span><span>Open slots <b>${openSlots().length}</b></span><span>Changed by you <b>${edited}</b></span>`}
-function refresh(){draw();table();card()}
-document.getElementById('legend').innerHTML=['R5','R4','R3','R2','R1'].map(k=>`<span><i style="background:${C[k]}"></i>${k}</span>`).join('')+
- `<span><i style="background:${C.UN}"></i>Unranked</span><span style="color:var(--gold)"><i style="border:3px solid var(--gold)"></i>Attack team</span><span style="color:var(--mg)"><i style="border:2px dashed var(--mg)"></i>MG plot</span><span style="color:var(--open)"><i style="border:2px dashed var(--open)"></i>Open slot</span><span style="color:var(--mute)"><i style="background:${C.nb}"></i>Other alliance</span>`;
-document.getElementById('notes').innerHTML=[
- [C.furnace,'Bottom-right is the Furnace, same as the game map. TWWH is right of it and INDe sits along the top edge of our hive.'],
- [C.gold,'Everyone keeps their current area, snapped to an exact spot: rows 2, 5, 8 … 29 and columns 531 … 558, plus column 561 under the Furnace.'],
- [C.mg,'MG plot top-left (X 531–539, Y 23–31) is already empty in the scan.'],
- [C.open,'Green OPEN spots are free grid slots for big players or new members.'],
- ['#ffd1d1','TP = teleport in from far away. MV = moves more than 2 tiles inside the hive.'],
- [C.mute,'Your drag & drop changes are saved in this browser only. Download a PNG to share the final layout.']
-].map(([c,t])=>`<div><b class="dot" style="background:${c}"></b><span>${t}</span></div>`).join('');
+// ---- side panel ----
+function pick(n){sel=sel===n&&!placing?null:n;document.getElementById('q').value=sel||'';refresh();
+ if(sel&&st.pos[sel]){const b=box(...st.pos[sel]);const r=board.getBoundingClientRect(),br=b.x*z,bt=b.y*z;
+  if(br<board.scrollLeft||br>board.scrollLeft+r.width-80||bt<board.scrollTop||bt>board.scrollTop+r.height-80)board.scrollTo({left:br-r.width/2,top:bt-r.height/2,behavior:'smooth'})}}
+function editor(){const ed=document.getElementById('ed');
+ if(!sel){ed.innerHTML='<h2>Selected base</h2><div class="hint">Tap a base on the map or in the roster.</div>';return}
+ const m=mem[sel],p=st.pos[sel];
+ ed.innerHTML=`<h2>Selected base</h2><div class="n"></div>
+  <div class="hint">Scan spot: ${m.on?`(${m.x}, ${m.y})`:`(${m.x}, ${m.y}) far away`}${m.atk?' · attack team':''}</div>
+  <div class="row"><label>Rank<select id="er">${RANKS.map(r=>`<option${r===st.rank[sel]?' selected':''}>${r}</option>`).join('')}</select></label>${m.set?'':'<span class="hint">rank not set in roster</span>'}</div>
+  <div class="row"><label>X<input id="ex" type="number" value="${p?p[0]:''}" min="${X0}" max="${X1-3}"></label><label>Y<input id="ey" type="number" value="${p?p[1]:''}" min="${Y0}" max="${Y1-3}"></label><button class="btn pri" id="ego">Move</button></div>
+  <div class="row"><button class="btn" id="epick">Pick spot on map</button>${p?'<button class="btn" id="eoff">Take off map</button>':''}${m.on&&p&&(p[0]!==m.x||p[1]!==m.y)?'<button class="btn" id="eback">Back to scan spot</button>':''}</div>`;
+ ed.querySelector('.n').textContent=sel;
+ ed.querySelector('#er').onchange=e=>{snap();st.rank[sel]=e.target.value;save();refresh();say(`${sel} set to ${e.target.value}.`)};
+ const go=()=>{const x=parseInt(ed.querySelector('#ex').value,10),y=parseInt(ed.querySelector('#ey').value,10);if(Number.isNaN(x)||Number.isNaN(y)){say('Type both X and Y.');return}moveTo(sel,[x,y])};
+ ed.querySelector('#ego').onclick=go;ed.querySelectorAll('input').forEach(i=>i.addEventListener('keydown',e=>{if(e.key==='Enter')go()}));
+ ed.querySelector('#epick').onclick=()=>{placing=sel;board.classList.add('placing');say(`Tap an empty spot on the map to place ${sel}.`)};
+ const off=ed.querySelector('#eoff');if(off)off.onclick=()=>{snap();st.pos[sel]=null;save();refresh();say(`${sel} taken off the map.`)};
+ const bk=ed.querySelector('#eback');if(bk)bk.onclick=()=>moveTo(sel,[m.x,m.y]);
+}
+function tray(){const t=document.getElementById('tray');t.innerHTML='';const off=D.members.filter(m=>!st.pos[m.n]);
+ if(!off.length){t.innerHTML='<div class="hint">Everyone is placed.</div>';return}
+ off.forEach(m=>{const b=document.createElement('button');b.innerHTML='<span></span><small></small>';b.firstChild.textContent=m.n;b.lastChild.textContent=`${st.rank[m.n]} · ${m.x},${m.y}`;
+  b.onclick=()=>{sel=m.n;placing=m.n;board.classList.add('placing');refresh();say(`Tap an empty spot on the map to place ${m.n}.`)};t.appendChild(b)})}
+function table(){const ord={R5:0,R4:1,R3:2,R2:3,R1:4};const tb=document.getElementById('tb');tb.innerHTML='';let mv=0,stay=0,off=0;
+ D.members.slice().sort((a,b)=>ord[st.rank[a.n]]-ord[st.rank[b.n]]||a.n.localeCompare(b.n)).forEach(m=>{const p=st.pos[m.n];let o,c='st';
+  if(!p){o='Not placed';c+=' off';off++}else if(m.on&&p[0]===m.x&&p[1]===m.y){o='Stay';stay++}else{o=m.on?`Move to ${p[0]}, ${p[1]}`:`Teleport to ${p[0]}, ${p[1]}`;c+=' mv';mv++}
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td></td><td><span class="rk" style="background:${C[st.rank[m.n]]}">${st.rank[m.n]}</span></td><td class="c">${m.x}, ${m.y}</td><td class="c"><b>${p?p.join(', '):'—'}</b></td><td><span class="${c}">${o}</span></td>`;
+  tr.firstChild.textContent=m.n+(m.atk?'  ★':'');tr.onclick=()=>{pick(m.n);board.scrollIntoView({behavior:'smooth',block:'center'})};tb.appendChild(tr)});
+ document.getElementById('sum').innerHTML=`<span>Members <b>${D.members.length}</b></span><span>Stay <b>${stay}</b></span><span>Move <b>${mv}</b></span><span>Not placed <b>${off}</b></span><span>★ attack team</span>`}
+function refresh(){draw();editor();tray();table();mgLabel()}
+document.getElementById('legend').innerHTML=RANKS.map(k=>`<span><i style="background:${C[k]}"></i>${k}</span>`).join('')+
+ `<span style="color:var(--gold)"><i style="border:3px solid var(--gold)"></i>Attack team</span><span style="color:var(--mg)"><i style="border:2px dashed var(--mg)"></i>MG plot</span><span style="color:var(--mute)"><i style="background:${C.nb}"></i>Other alliance</span>`;
+document.getElementById('sub').textContent=`Furnace (562, 4) · positions from the ${D.scan} map scan · in-game orientation (Y goes up)`;
 const dl=document.getElementById('names');D.members.forEach(m=>{const o=document.createElement('option');o.value=m.n;dl.appendChild(o)});
-document.getElementById('q').addEventListener('input',e=>{const v=e.target.value.trim().toLowerCase();if(!v){sel=null;card();draw();return}const h=D.members.find(m=>m.n.toLowerCase()===v)||D.members.find(m=>m.n.toLowerCase().includes(v));if(h){sel=h.n;card();draw();const b=box(P[h.n][0],P[h.n][1]);board.scrollTo({left:b.x*z-board.clientWidth/2,top:b.y*z-board.clientHeight/2,behavior:'smooth'})}});
-refresh();setZoom(1);board.scrollLeft=board.scrollWidth;board.scrollTop=board.scrollHeight;
+document.getElementById('q').addEventListener('input',e=>{const v=e.target.value.trim().toLowerCase();if(!v){sel=null;refresh();return}const h=D.members.find(m=>m.n.toLowerCase()===v)||D.members.find(m=>m.n.toLowerCase().includes(v));if(h&&h.n!==sel){sel=null;pick(h.n)}});
+refresh();setZoom(1);requestAnimationFrame(fitHive);
 </script>
 
 </body>
